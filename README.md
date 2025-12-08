@@ -2,7 +2,7 @@
 
 Tài liệu này giải thích chi tiết các bước thực hiện trong các Jupyter Notebook của dự án, tập trung vào quy trình Khám phá dữ liệu (EDA) và Xây dựng mô hình (Modeling).
 
-> **Lưu ý:** Để xem hướng dẫn chạy code (Train/Predict), vui lòng xem file [README_HowToRun.md](README_HowToRun.md).
+> **Lưu ý:** Để xem hướng dẫn chạy code (Train/Predict), xem file [README_HowToRun.md](README_HowToRun.md).
 
 ## 1. `eda_preprocessing.ipynb` (Khám phá và Tiền xử lý dữ liệu)
 
