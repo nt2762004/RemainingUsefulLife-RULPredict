@@ -1,66 +1,76 @@
-# GIẢI THÍCH CHI TIẾT NOTEBOOK VÀ EDA
+# Dự án Dự đoán Tuổi thọ Pin (Battery RUL Prediction)
 
-Tài liệu này giải thích chi tiết các bước thực hiện trong các Jupyter Notebook của dự án, tập trung vào quy trình Khám phá dữ liệu (EDA) và Xây dựng mô hình (Modeling).
+Dự án này xây dựng một hệ thống Machine Learning để dự đoán **tuổi thọ còn lại (Remaining Useful Life - RUL)** của pin Li-ion dựa trên dữ liệu chu kỳ sạc/xả.
 
-> **Lưu ý:** Để xem hướng dẫn chạy code (Train/Predict), xem file [README_HowToRun.md](README_HowToRun.md).
+Hệ thống tập trung vào việc xử lý dữ liệu chuỗi thời gian, trích xuất các đặc trưng vật lý quan trọng của pin và áp dụng các mô hình học máy từ cơ bản đến nâng cao để đưa ra dự đoán chính xác.
 
-## 1. `eda_preprocessing.ipynb` (Khám phá và Tiền xử lý dữ liệu)
+## Cấu trúc Thư mục
 
+```
+├── eda_preprocessing.ipynb       # Notebook khám phá (EDA) và tiền xử lý dữ liệu (lọc nhiễu, làm sạch)
+├── battery_rul_modelingv2.ipynb  # Notebook chính: Feature Engineering và huấn luyện mô hình (RF, XGBoost, DL)
+├── battery_rul_modelingv1.ipynb  # Notebook thử nghiệm ban đầu (Baseline)
+├── train.py                      # Script huấn luyện pipeline chuẩn (cho production)
+├── predict.py                    # Script dự đoán RUL cho dữ liệu mới
+├── evaluate.py                   # Script đánh giá hiệu năng mô hình trên tập test
+├── configs/                      # Thư mục chứa file cấu hình (config.yaml)
+├── data/                         # Thư mục dữ liệu
+│   ├── raw/                      # Dữ liệu thô (Battery_RUL.csv)
+│   └── processed/                # Dữ liệu đã qua xử lý (Battery_RUL_processed.csv)
+├── models/                       # Thư mục lưu các model đã huấn luyện (.joblib)
+└── outputs/                      # Thư mục chứa kết quả dự đoán (.csv)
+```
+
+> **Lưu ý:** Để xem hướng dẫn chạy code (Train/Predict) xem file [README_HowToRun.md](README_HowToRun.md).
+
+### 1. `eda_preprocessing.ipynb` (Khám phá và Tiền xử lý)
 Notebook này thực hiện các bước chuẩn bị dữ liệu quan trọng trước khi đưa vào mô hình.
 
-### Bước 1: Khám phá dữ liệu (EDA)
-- **Load dữ liệu**: Đọc dữ liệu thô từ `data/raw/Battery_RUL.csv`.
-- **Trực quan hóa**:
-  - *Phân bố RUL*: Xem histogram để hiểu phân phối của biến mục tiêu.
-  - *RUL theo chu kỳ*: Vẽ biểu đồ đường để thấy xu hướng giảm dần của RUL theo thời gian (Cycle Index).
-  - *Ma trận tương quan (Heatmap)*: Xem mối quan hệ giữa các đặc trưng (features) với nhau và với RUL.
+*   **Mục tiêu:** Hiểu đặc điểm dữ liệu, loại bỏ nhiễu và tạo ra bộ dữ liệu sạch.
+*   **Quy trình:**
+    *   **Load dữ liệu:** Đọc dữ liệu thô từ `data/raw/Battery_RUL.csv`.
+    *   **Trực quan hóa (EDA):** Vẽ biểu đồ phân bố RUL, xu hướng giảm RUL theo chu kỳ, và ma trận tương quan (Heatmap).
+    *   **Xử lý dữ liệu lỗi (Data Cleaning):**
+        *   *Logic vật lý:* Các cột thời gian (như thời gian sạc/xả) không thể có giá trị âm hoặc bằng 0. Các giá trị này được chuyển thành `NaN`.
+        *   *Xử lý ngoại lai toàn cục (Global Outliers):* Loại bỏ các giá trị "siêu lớn" vô lý do lỗi cảm biến (sử dụng ngưỡng quantile 99.5% để cắt bỏ phần đuôi phân phối cực đoan).
+    *   **Làm mượt dữ liệu (Smoothing & Local Outliers):**
+        *   Sử dụng phương pháp **Rolling Median** (Trung vị trượt) để phát hiện và loại bỏ các điểm dữ liệu nhiễu cục bộ (nhảy vọt bất thường so với các điểm lân cận trong chuỗi thời gian).
+    *   **Điền dữ liệu khuyết thiếu (Imputation):**
+        *   Sử dụng **Nội suy tuyến tính (Linear Interpolation)** để điền vào các giá trị `NaN` đã tạo ra ở các bước trên. Phương pháp này giúp khôi phục tính liên tục của chuỗi thời gian tốt hơn so với điền bằng trung bình.
+    *   **Kết quả:** Lưu file `data/processed/Battery_RUL_processed.csv`.
 
-### Bước 2: Tiền xử lý và Làm sạch dữ liệu
-- **Xử lý giá trị âm/bằng 0**: Các cột thời gian (Time columns) không thể có giá trị <= 0, được chuyển thành NaN.
-- **Xử lý ngoại lai toàn cục (Global Outliers)**: Loại bỏ các giá trị "siêu lớn" vô lý (ví dụ: thời gian xả quá dài do lỗi cảm biến) bằng cách dùng quantile 99.5%.
-- **Lọc nhiễu cục bộ (Local Outliers)**: Sử dụng phương pháp Rolling Median (cửa sổ trượt) để phát hiện các điểm dữ liệu nhảy vọt bất thường so với các điểm lân cận và loại bỏ chúng.
-- **Điền dữ liệu (Interpolation)**: Sử dụng nội suy tuyến tính (linear interpolation) để điền vào các giá trị NaN đã tạo ra ở các bước trên, giúp dữ liệu mượt mà và liên tục theo chuỗi thời gian.
+### 2. `battery_rul_modelingv2.ipynb` (Huấn luyện Mô hình Cải tiến)
+Phiên bản chính.
 
-### Bước 3: Lưu kết quả
-- Dữ liệu sạch được lưu vào `data/processed/Battery_RUL_processed.csv` để dùng cho các bước modeling sau này.
+*   **Mục tiêu:** Xây dựng mô hình dự đoán RUL tránh hiện tượng "học vẹt" (overfitting vào chỉ số chu kỳ).
+*   **Quy trình:**
+    *   **Feature Engineering (Tạo đặc trưng):**
+        *   *Vật lý:* Efficiency Ratio (Tỷ lệ xả/sạc), Voltage Drop Rate (Tốc độ sụt áp).
+        *   *Thống kê:* Rolling Mean/Std (Xu hướng và độ ổn định trong 10 chu kỳ gần nhất).
+        *   *Chuỗi thời gian:* Lag features (Giá trị của chu kỳ trước).
+    *   **Chuẩn bị dữ liệu:** Loại bỏ cột `Cycle_Index` để ép mô hình học từ đặc trưng pin thay vì số thứ tự. Chia tập Train/Test (80/20) và chuẩn hóa (StandardScaler).
+    *   **Huấn luyện Mô hình:**
+        *   *Machine Learning:* Linear Regression (Baseline), Random Forest, XGBoost.
+        *   *Deep Learning:* LSTM, GRU, CNN (cho dữ liệu chuỗi).
+    *   **Đánh giá:** Sử dụng RMSE, MAE, R2 Score và phân tích biểu đồ Residuals.
 
----
+### 3. `battery_rul_modelingv1.ipynb` (Thử nghiệm Ban đầu)
+Phiên bản thử nghiệm.
 
-## 2. `battery_rul_modelingv2.ipynb` (Huấn luyện mô hình cải tiến)
+*   **Mục tiêu:** Chạy thử nghiệm nhanh các mô hình cơ bản.
+*   **Đặc điểm:** Giữ feature `Cycle_Index`, dẫn đến kết quả dự đoán có thể rất cao trên tập test cùng phân phối nhưng kém khi áp dụng thực tế (overfitting). Dùng để so sánh với v2.
 
-Đây là notebook chính để xây dựng và đánh giá mô hình, với các cải tiến để tránh overfitting.
+### 4. Các Scripts (`train.py`, `predict.py`, `evaluate.py`)
+Bộ mã nguồn Python thuần để chạy pipeline tự động hóa (MLOps).
 
-### Bước 1: Import thư viện
-- Sử dụng `pandas`, `numpy` để xử lý dữ liệu.
-- `sklearn` cho các mô hình (LinearRegression, RandomForest) và đánh giá (RMSE, MAE, R2).
+*   **`train.py`:** Tự động đọc config, load dữ liệu, huấn luyện và lưu model vào thư mục `models/`.
+*   **`evaluate.py`:** Load model đã lưu và đánh giá lại trên tập test.
+*   **`predict.py`:** Nhận file CSV đầu vào (dữ liệu pin mới), chạy qua bước tiền xử lý tương tự v2 và xuất kết quả dự đoán ra `outputs/predictions.csv`.
 
-### Bước 2: Load dữ liệu
-- Đọc file `data/processed/Battery_RUL_processed.csv`.
-- Sắp xếp lại theo `Cycle_Index` để đảm bảo tính thứ tự thời gian cho việc tạo feature.
+## Yêu cầu cài đặt
 
-### Bước 3: Feature Engineering (Tạo đặc trưng mới)
-- **Efficiency_Ratio**: Tỷ lệ thời gian xả / sạc.
-- **Voltage_Drop_Rate**: Tốc độ sụt áp trung bình ((Max Voltage - Min Voltage) / Discharge Time).
-- **Discharge_Drop_Rate**: Tốc độ giảm thời gian xả so với chu kỳ trước (dùng `.diff()`).
-- **Rolling Mean/Std (window=10)**: Trung bình và độ lệch chuẩn trượt của 10 chu kỳ gần nhất (làm mượt dữ liệu và bắt xu hướng biến động).
-- **Lag Feature (Prev_Cycle_Discharge)**: Giá trị thời gian xả của chu kỳ trước (tính chất Markov - trạng thái hiện tại phụ thuộc quá khứ gần).
-- **Xử lý dữ liệu lỗi**: Loại bỏ các dòng có `Voltage_Drop_Rate < 0` (vô lý vật lý).
+Dự án yêu cầu các thư viện Python sau:
 
-### Bước 4: Chia tập dữ liệu (Train/Test Split)
-- **QUAN TRỌNG**: Loại bỏ cột `Cycle_Index` khỏi tập features (X). Việc này ngăn mô hình "học vẹt" (chỉ nhớ số thứ tự chu kỳ để đoán RUL) và bắt buộc mô hình phải học từ các đặc trưng vật lý của pin.
-- Chia train/test theo tỷ lệ 80/20.
-- Chuẩn hóa dữ liệu (StandardScaler) để đưa các feature về cùng quy mô.
-
-### Bước 5: Huấn luyện và đánh giá mô hình
-- **Linear Regression**: Mô hình cơ bản để làm baseline so sánh.
-- **Random Forest Regressor**: Mô hình ensemble mạnh mẽ, thường cho kết quả tốt với dữ liệu bảng.
-- **XGBoost**: Mô hình Gradient Boosting tối ưu, thường đạt hiệu suất cao nhất trên các bài toán dạng bảng.
-- **Deep Learning Models (LSTM, GRU, CNN)**: Các mô hình mạng nơ-ron sâu để bắt các đặc trưng chuỗi thời gian phức tạp (nếu dữ liệu được xử lý dưới dạng sequence).
-- **Đánh giá**: Sử dụng RMSE (Root Mean Squared Error), MAE (Mean Absolute Error), và R2 Score. Trực quan hóa so sánh Actual vs Predicted và phân tích Residuals.
-
----
-
-## 3. `battery_rul_modelingv1.ipynb` (Phiên bản thử nghiệm)
-
-- Phiên bản đầu tiên, thử nghiệm các mô hình cơ bản.
-- Có thể vẫn giữ feature `Cycle_Index`, dẫn đến kết quả dự đoán có thể rất cao nhưng không thực tế (overfitting) khi áp dụng cho pin mới hoặc điều kiện vận hành khác.
+```bash
+pip install pandas numpy scikit-learn matplotlib seaborn xgboost joblib pyyaml
+```
