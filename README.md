@@ -1,4 +1,4 @@
-# Dự án Dự đoán Tuổi thọ Pin (Battery RUL Prediction)
+# Dự đoán Tuổi thọ Pin (Battery RUL Prediction)
 
 Dự án này xây dựng một hệ thống Machine Learning để dự đoán **tuổi thọ còn lại (Remaining Useful Life - RUL)** của pin Li-ion dựa trên dữ liệu chu kỳ sạc/xả.
 
