@@ -1,4 +1,4 @@
-# Battery RUL Prediction Project (English Version)
+# Battery RUL Prediction Project
 
 This project builds a Machine Learning system to predict the **Remaining Useful Life (RUL)** of Li-ion batteries based on charge/discharge cycle data.
 
@@ -76,7 +76,7 @@ pip install pandas numpy scikit-learn matplotlib seaborn xgboost joblib pyyaml
 ```
 ---
 
-# Dự án Dự đoán Tuổi thọ Pin (Battery RUL Prediction) (Vietnamese Version)
+# Dự án Dự đoán Tuổi thọ Pin (Battery RUL Prediction)
 
 Dự án này xây dựng một hệ thống Machine Learning để dự đoán **tuổi thọ còn lại (Remaining Useful Life - RUL)** của pin Li-ion dựa trên dữ liệu chu kỳ sạc/xả.
 
