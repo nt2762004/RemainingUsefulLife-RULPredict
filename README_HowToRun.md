@@ -1,5 +1,82 @@
-HƯỚNG DẪN CHẠY DỰ ÁN Battery RUL
-=================================
+# HOW TO RUN Battery RUL PROJECT
+
+## Goal
+The project provides a pure Python pipeline to train, evaluate, and predict the Remaining Useful Life (RUL) of batteries from CSV data.
+
+Default uses processed data: `data/processed/Battery_RUL_processed.csv`
+
+## Main Structure
+- `configs/config.yaml`
+  • Central configuration file: data paths, random_state, test_size, model parameters.
+
+- `train.py`
+  • Main TRAINING script: reads data, separates features/target (RUL), splits train/test, trains Pipeline [StandardScaler + RandomForest], evaluates quickly, saves .joblib model and .meta.json metadata to `models/` folder.
+
+- `evaluate.py` (optional)
+  • Loads saved model and scores again on test split (according to config). Prints RMSE/MAE/R2.
+
+- `predict.py`
+  • Loads saved model and predicts RUL for 1 input CSV file. If input has RUL column, it will automatically ignore it when predicting. Writes results to `outputs/predictions.csv`.
+
+- `rul/` folder (internal library, do not run directly)
+  • `rul/config.py`: Dataclass config + load_config.
+  • `rul/data.py`: read_csv, get_features_and_target, split_train_test.
+  • `rul/model.py`: build Pipeline (preprocessing + RandomForestRegressor).
+  • `rul/metrics.py`: RMSE, MAE, R2, regression_report.
+  • `rul/utils.py`: logging, create folder, save JSON, timestamp.
+
+- `data/`
+  • `processed/Battery_RUL_processed.csv` (default used for train/eval/predict)
+  • `raw/Battery_RUL.csv` (raw data — only use when you want to override)
+
+- `models/`
+  • Place to save .joblib model files and .meta.json metadata when training is done.
+
+- `outputs/`
+  • Place to save prediction files, example `outputs/predictions.csv`.
+
+- Notebooks (optional reference, not required for pipeline to run)
+  • `eda_preprocessing.ipynb`: data exploration, preprocessing, visualization.
+  • `battery_rul_modelingv1.ipynb`: basic model testing.
+  • `battery_rul_modelingv2.ipynb`: improved version, removes 'Cycle_Index' feature to avoid rote learning (overfitting to cycle index), adds feature engineering.
+
+## Standard Run Order
+1) Train (required)
+   PowerShell:
+   
+   `python .\train.py`
+   
+   • Result: creates `models\rul_model_YYYYMMDD-HHMMSS.joblib` and `models\rul_model_YYYYMMDD-HHMMSS.meta.json`
+
+2) Evaluate (optional)
+   PowerShell:
+   
+   `python .\evaluate.py --model ".\models\rul_model_YYYYMMDD-HHMMSS.joblib"`
+
+3) Predict (inference)
+   PowerShell:
+   
+   `python .\predict.py --model ".\models\rul_model_YYYYMMDD-HHMMSS.joblib" --input_csv "data\processed\Battery_RUL_processed.csv" --output_csv "outputs\predictions.csv"`
+
+## Quick Customization
+- Change data path or model parameters: edit in `configs/config.yaml`.
+- Or override when running:
+  • Train with other data (e.g., raw file):
+    `python .\train.py --data "data\raw\Battery_RUL.csv"`
+
+  • Evaluate on other data:
+    `python .\evaluate.py --model ".\models\rul_model_....joblib" --data "data\processed\Battery_RUL_processed.csv"`
+
+  • Predict on other CSV:
+    `python .\predict.py --model ".\models\rul_model_....joblib" --input_csv "path\to\your.csv" --output_csv "outputs\predictions.csv"`
+
+## Notebook vs. Scripts Role
+- Notebook (.ipynb): place for exploration/visualization/testing for presentation.
+- Scripts (.py): standard process for training/evaluation/inference that can be repeated and reused.
+
+---
+
+# Cách chạy dự án Battery RUL
 
 Mục tiêu
 --------
