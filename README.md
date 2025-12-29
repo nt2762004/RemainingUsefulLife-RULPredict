@@ -1,4 +1,82 @@
-# Dự án Dự đoán Tuổi thọ Pin (Battery RUL Prediction)
+# Battery RUL Prediction Project (English Version)
+
+This project builds a Machine Learning system to predict the **Remaining Useful Life (RUL)** of Li-ion batteries based on charge/discharge cycle data.
+
+The system focuses on processing time-series data, extracting important physical features of the battery, and applying machine learning models from basic to advanced to give accurate predictions.
+
+## Folder Structure
+
+```
+├── eda_preprocessing.ipynb       # Notebook for EDA and data preprocessing (filtering noise, cleaning)
+├── battery_rul_modelingv2.ipynb  # Main Notebook: Feature Engineering and model training (RF, XGBoost, DL)
+├── battery_rul_modelingv1.ipynb  # Initial test Notebook (Baseline)
+├── train.py                      # Training script for standard pipeline (for production)
+├── predict.py                    # Script to predict RUL for new data
+├── evaluate.py                   # Script to evaluate model performance on test set
+├── configs/                      # Folder containing config files (config.yaml)
+├── data/                         # Data folder
+│   ├── raw/                      # Raw data (Battery_RUL.csv)
+│   └── processed/                # Processed data (Battery_RUL_processed.csv)
+├── models/                       # Folder to save trained models (.joblib)
+└── outputs/                      # Folder containing prediction results (.csv)
+```
+
+> **Note:** To see instructions on how to run the code (Train/Predict), see the file [README_HowToRun.md](README_HowToRun.md).
+
+### 1. `eda_preprocessing.ipynb` (Exploration and Preprocessing)
+This notebook performs important data preparation steps before putting data into the model.
+
+*   **Goal:** Understand data characteristics, remove noise, and create a clean dataset.
+*   **Process:**
+    *   **Load Data:** Read raw data from `data/raw/Battery_RUL.csv`.
+    *   **Visualization (EDA):** Draw charts for RUL distribution, RUL decrease trend by cycle, and correlation matrix (Heatmap).
+    *   **Handle Error Data (Data Cleaning):**
+        *   *Physical Logic:* Time columns (like charge/discharge time) cannot be negative or zero. These values are changed to `NaN`.
+        *   *Global Outliers:* Remove "very large" values caused by sensor errors (using 99.5% quantile threshold to cut off extreme values).
+    *   **Smooth Data (Smoothing & Local Outliers):**
+        *   Use **Rolling Median** method to find and remove local noise points (sudden jumps compared to neighbors in the time series).
+    *   **Fill Missing Data (Imputation):**
+        *   Use **Linear Interpolation** to fill `NaN` values created in previous steps. This method helps restore time series continuity better than filling with the average.
+    *   **Result:** Save file `data/processed/Battery_RUL_processed.csv`.
+
+### 2. `battery_rul_modelingv2.ipynb` (Improved Model Training)
+Main version.
+
+*   **Goal:** Build RUL prediction model avoiding "rote learning" (overfitting to cycle index).
+*   **Process:**
+    *   **Feature Engineering:**
+        *   *Physical:* Efficiency Ratio (Discharge/Charge ratio), Voltage Drop Rate.
+        *   *Statistical:* Rolling Mean/Std (Trend and stability in last 10 cycles).
+        *   *Time Series:* Lag features (Values of previous cycle).
+    *   **Prepare Data:** Remove `Cycle_Index` column to force the model to learn from battery features instead of order number. Split Train/Test (80/20) and normalize (StandardScaler).
+    *   **Train Model:**
+        *   *Machine Learning:* Linear Regression (Baseline), Random Forest, XGBoost.
+        *   *Deep Learning:* LSTM, GRU, CNN (for sequence data).
+    *   **Evaluate:** Use RMSE, MAE, R2 Score and analyze Residuals charts.
+
+### 3. `battery_rul_modelingv1.ipynb` (Initial Test)
+Test version.
+
+*   **Goal:** Run quick tests of basic models.
+*   **Characteristics:** Keeps `Cycle_Index` feature, leading to prediction results that might be very high on test set with same distribution but poor in real application (overfitting). Used to compare with v2.
+
+### 4. Scripts (`train.py`, `predict.py`, `evaluate.py`)
+Pure Python source code to run automated pipeline (MLOps).
+
+*   **`train.py`:** Automatically reads config, loads data, trains and saves model to `models/` folder.
+*   **`evaluate.py`:** Loads saved model and evaluates again on test set.
+*   **`predict.py`:** Receives input CSV file (new battery data), runs through preprocessing steps similar to v2 and exports prediction results to `outputs/predictions.csv`.
+
+## Installation Requirements
+
+The project requires these Python libraries:
+
+```bash
+pip install pandas numpy scikit-learn matplotlib seaborn xgboost joblib pyyaml
+```
+---
+
+# Dự án Dự đoán Tuổi thọ Pin (Battery RUL Prediction) (Vietnamese Version)
 
 Dự án này xây dựng một hệ thống Machine Learning để dự đoán **tuổi thọ còn lại (Remaining Useful Life - RUL)** của pin Li-ion dựa trên dữ liệu chu kỳ sạc/xả.
 
