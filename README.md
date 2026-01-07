@@ -84,6 +84,8 @@ Dự án này xây dựng một hệ thống Machine Learning để dự đoán 
 
 Hệ thống tập trung vào việc xử lý dữ liệu chuỗi thời gian, trích xuất các đặc trưng vật lý quan trọng của pin và áp dụng các mô hình học máy từ cơ bản đến nâng cao để đưa ra dự đoán chính xác.
 
+Dataset: https://www.kaggle.com/datasets/ignaciovinuales/battery-remaining-useful-life-rul/data
+
 ## Cấu trúc Thư mục
 
 ```
