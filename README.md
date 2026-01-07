@@ -4,6 +4,8 @@ This project builds a Machine Learning system to predict the **Remaining Useful 
 
 The system focuses on processing time-series data, extracting important physical features of the battery, and applying machine learning models from basic to advanced to give accurate predictions.
 
+Dataset: https://www.kaggle.com/datasets/ignaciovinuales/battery-remaining-useful-life-rul/data
+
 ## Folder Structure
 
 ```
